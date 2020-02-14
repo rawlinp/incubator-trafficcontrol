@@ -602,6 +602,7 @@ func Routes(d ServerData) ([]Route, []RawRoute, http.Handler, error) {
 		{api.Version{1, 1}, http.MethodGet, `cdns/name/{name}/dnsseckeys/?(\.json)?$`, cdn.GetDNSSECKeysV11, auth.PrivLevelAdmin, Authenticated, nil, 1427173311, noPerlBypass},
 
 		{api.Version{1, 4}, http.MethodGet, `cdns/dnsseckeys/refresh/?(\.json)?$`, cdn.RefreshDNSSECKeys, auth.PrivLevelOperations, Authenticated, nil, 1771997116, noPerlBypass},
+		{api.Version{1, 5}, http.MethodPost, `deliveryservices/{xml_id}/dnsseckeys$`, cdn.CreateDNSSECKeysForDS, auth.PrivLevelAdmin, Authenticated, nil, 1766567532, noPerlBypass},
 
 		//CDN: Monitoring: Traffic Monitor
 		{api.Version{1, 1}, http.MethodGet, `cdns/{cdn}/configs/monitoring(\.json)?$`, crconfig.SnapshotGetMonitoringHandler, auth.PrivLevelReadOnly, Authenticated, nil, 2140847892, noPerlBypass},

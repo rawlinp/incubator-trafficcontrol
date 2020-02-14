@@ -84,6 +84,32 @@ func CreateDNSSECKeys(w http.ResponseWriter, r *http.Request) {
 	api.WriteResp(w, r, "Successfully created dnssec keys for "+cdnName)
 }
 
+func CreateDNSSECKeysForDS(w http.ResponseWriter, r *http.Request) {
+	inf, userErr, sysErr, errCode := api.NewInfo(r, []string{"xml_id"}, nil)
+	if userErr != nil || sysErr != nil {
+		api.HandleErr(w, r, inf.Tx.Tx, errCode, userErr, sysErr)
+		return
+	}
+	defer inf.Close()
+
+	xmlID := inf.Params["xml_id"]
+
+	cdnDomain, cdnName, cdnExists, err := dbhelpers.GetCDNDomainFromDSXMLID(inf.Tx.Tx, xmlID)
+	if err != nil {
+		api.HandleErr(w, r, inf.Tx.Tx, http.StatusInternalServerError, nil, errors.New("create DNSSEC keys: getting CDN domain: "+err.Error()))
+		return
+	} else if !cdnExists {
+		api.HandleErr(w, r, inf.Tx.Tx, http.StatusNotFound, errors.New("cdn for delivery service '"+xmlID+"' not found"), nil)
+		return
+	}
+
+	if err := generateStoreDNSSECKeysForDS(inf.Tx.Tx, inf.Config, xmlID, cdnName, cdnDomain, 3600, 365, 365); err != nil {
+		api.HandleErr(w, r, inf.Tx.Tx, http.StatusInternalServerError, nil, errors.New("generating and storing DNSSEC CDN keys: "+err.Error()))
+		return
+	}
+	api.WriteResp(w, r, "Successfully created dnssec keys for delivery service '"+xmlID+"'")
+}
+
 // DefaultDSTTL is the default DS Record TTL to use, if no CDN Snapshot exists, or if no tld.ttls.DS parameter exists.
 // This MUST be the same value as Traffic Router's default. Currently:
 // traffic_router/core/src/main/java/com/comcast/cdn/traffic_control/traffic_router/core/dns/SignatureManager.java:476
@@ -260,6 +286,69 @@ func generateStoreDNSSECKeys(
 	return nil
 }
 
+func generateStoreDNSSECKeysForDS(
+	tx *sql.Tx,
+	cfg *config.Config,
+	xmlID string,
+	cdnName string,
+	cdnDomain string,
+	ttlSeconds uint64,
+	kExpDays uint64,
+	zExpDays uint64,
+) error {
+
+	zExp := time.Duration(zExpDays) * time.Hour * 24
+	kExp := time.Duration(kExpDays) * time.Hour * 24
+	ttl := time.Duration(ttlSeconds) * time.Second
+
+	oldKeys, oldKeysExist, err := riaksvc.GetDNSSECKeys(cdnName, tx, cfg.RiakAuthOptions, cfg.RiakPort)
+	if err != nil || !oldKeysExist {
+		return errors.New("getting old dnssec keys: " + err.Error())
+	}
+
+	cdnKeys, cdnKeysExist := oldKeys[cdnName]
+	if !cdnKeysExist {
+		return errors.New("getting old dnssec keys: " + err.Error())
+	}
+
+	ds, err := GetCDNDeliveryService(tx, xmlID)
+	if err != nil {
+		return errors.New("getting cdn delivery services: " + err.Error())
+	}
+
+	cdnDNSDomain := cdnDomain
+	if !strings.HasSuffix(cdnDNSDomain, ".") {
+		cdnDNSDomain = cdnDNSDomain + "."
+	}
+	cdnDNSDomain = strings.ToLower(cdnDNSDomain)
+
+	matchLists, err := deliveryservice.GetDeliveryServicesMatchLists([]string{ds.Name}, tx)
+	if err != nil {
+		return errors.New("getting delivery service matchlists: " + err.Error())
+	}
+	if !ds.Type.IsHTTP() && !ds.Type.IsDNS() {
+		return errors.New("cannot create dnssec keys for this delivery service type")
+	}
+
+	matchlist, ok := matchLists[ds.Name]
+	if !ok {
+		return errors.New("no regex match list found for delivery service '" + ds.Name)
+	}
+
+	exampleURLs := deliveryservice.MakeExampleURLs(ds.Protocol, ds.Type, ds.RoutingName, matchlist, cdnDomain)
+	log.Infoln("Creating keys for " + ds.Name)
+	overrideTTL := true
+	dsKeys, err := deliveryservice.CreateDNSSECKeys(tx, cfg, ds.Name, exampleURLs, cdnKeys, kExp, zExp, ttl, overrideTTL)
+	if err != nil {
+		return errors.New("creating delivery service DNSSEC keys: " + err.Error())
+	}
+	oldKeys[ds.Name] = dsKeys
+	if err := riaksvc.PutDNSSECKeys(oldKeys, cdnName, tx, cfg.RiakAuthOptions, cfg.RiakPort); err != nil {
+		return errors.New("putting Riak DNSSEC CDN keys: " + err.Error())
+	}
+	return nil
+}
+
 type CDNDS struct {
 	Name        string
 	Protocol    *int
@@ -296,6 +385,29 @@ WHERE cdn.name = $1
 		dses = append(dses, ds)
 	}
 	return dses, nil
+}
+
+// GetCDNDeliveryService returns basic data for the delivery services with the given xml_id, or any error.
+func GetCDNDeliveryService(tx *sql.Tx, xmlID string) (*CDNDS, error) {
+	q := `
+SELECT ds.protocol, t.name as type, ds.routing_name
+FROM deliveryservice as ds
+JOIN type as t ON ds.type = t.id
+WHERE ds.xml_id = $1
+`
+	ds := CDNDS{}
+	ds.Name = xmlID
+	dsTypeStr := ""
+	if err := tx.QueryRow(q, ds.Name).Scan(&ds.Protocol, &dsTypeStr, &ds.RoutingName); err != nil {
+		return nil, errors.New("scanning cdn delivery service: " + err.Error())
+	}
+	dsType := tc.DSTypeFromString(dsTypeStr)
+	if dsType == tc.DSTypeInvalid {
+		return nil, errors.New("got invalid delivery service type '" + dsTypeStr + "'")
+	}
+	ds.Type = dsType
+
+	return &ds, nil
 }
 
 func DeleteDNSSECKeys(w http.ResponseWriter, r *http.Request) {

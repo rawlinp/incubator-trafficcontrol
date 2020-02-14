@@ -475,6 +475,19 @@ func GetCDNDomainFromName(tx *sql.Tx, cdnName tc.CDNName) (string, bool, error) 
 	return domain, true, nil
 }
 
+// GetCDNDomainFromDSXMLID returns the domain, name, whether the cdn exists, and any error.
+func GetCDNDomainFromDSXMLID(tx *sql.Tx, xmlID string) (string, string, bool, error) {
+	domain := ""
+	name := ""
+	if err := tx.QueryRow(`SELECT domain_name, name FROM cdn WHERE id = (SELECT cdn_id FROM deliveryservice WHERE xml_id = $1)`, xmlID).Scan(&domain, &name); err != nil {
+		if err == sql.ErrNoRows {
+			return "", "", false, nil
+		}
+		return "", "", false, errors.New("Error querying CDN name by xml_id: " + err.Error())
+	}
+	return domain, name, true, nil
+}
+
 // GetServerInfo returns a ServerInfo struct, whether the server exists, and an error (if one occurs).
 func GetServerInfo(serverID int, tx *sql.Tx) (tc.ServerInfo, bool, error) {
 	q := `

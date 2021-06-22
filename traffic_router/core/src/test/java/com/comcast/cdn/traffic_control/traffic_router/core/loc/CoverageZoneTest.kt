@@ -247,10 +247,10 @@ class CoverageZoneTest {
         val deliveryServiceReference = DeliveryServiceReference("delivery-service-1", "some.example.com")
         val deliveryServices: MutableList<DeliveryServiceReference> = ArrayList()
         deliveryServices.add(deliveryServiceReference)
-        val testLocation = Geolocation(40.0, -101)
+        val testLocation = Geolocation(40.0, -101.0)
         val farEastLocation = Geolocation(40.0, -101.5)
-        val eastLocation = Geolocation(40.0, -100)
-        val westLocation = Geolocation(40.0, -105)
+        val eastLocation = Geolocation(40.0, -100.0)
+        val westLocation = Geolocation(40.0, -105.0)
         val farEastCache1 = Cache("far-east-cache-1", "hashid", 1)
         farEastCache1.setIsAvailable(true)
         val lms: MutableSet<LocalizationMethod> = HashSet()
@@ -276,7 +276,7 @@ class CoverageZoneTest {
         Mockito.`when`(cacheRegister.getCacheLocationById("east-cache-group")).thenReturn(eastCacheGroup)
         Mockito.`when`(cacheRegister.filterAvailableCacheLocations("delivery-service-1")).thenReturn(cacheGroups)
         Mockito.`when`(cacheRegister.getDeliveryService("delivery-service-1")).thenReturn(deliveryService)
-        trafficRouter = PowerMockito.mock(TrafficRouter::class.java)
+        val trafficRouter = PowerMockito.mock(TrafficRouter::class.java)
         Whitebox.setInternalState(trafficRouter, "cacheRegister", cacheRegister)
         Mockito.`when`(
             trafficRouter.getCoverageZoneCacheLocation(
@@ -326,6 +326,7 @@ class CoverageZoneTest {
                 DeliveryService::class.java
             ), Matchers.any(IPVersions::class.java)
         ).thenCallRealMethod()
+        this.trafficRouter = trafficRouter
     }
 
     @Test

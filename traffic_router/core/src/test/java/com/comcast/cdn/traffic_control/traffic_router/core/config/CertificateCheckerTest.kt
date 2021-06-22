@@ -250,7 +250,7 @@ class CertificateCheckerTest {
         certificateData!!.hostname = "https-delivery-service.thecdn.example.com"
         certificateData!!.deliveryservice = "https-delivery-service"
         certificateData!!.certificate = certificate
-        certificateDataList = Arrays.asList(
+        certificateDataList = Arrays.asList<CertificateData>(
             certificateData
         )
     }

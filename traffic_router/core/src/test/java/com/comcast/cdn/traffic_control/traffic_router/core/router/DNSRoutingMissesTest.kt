@@ -240,8 +240,8 @@ import org.xbill.DNS.Type
 @PrepareForTest(DeliveryService::class, TrafficRouter::class)
 class DNSRoutingMissesTest {
     private var request: DNSRequest? = null
-    private var trafficRouter: TrafficRouter? = null
-    private var track: StatTracker.Track? = null
+    private var trafficRouter: TrafficRouter = Mockito.mock(TrafficRouter::class.java)
+    private var track: StatTracker.Track = Mockito.mock(StatTracker.Track::class.java)
     @Before
     @Throws(Exception::class)
     fun before() {
@@ -280,7 +280,7 @@ class DNSRoutingMissesTest {
     @Test
     @Throws(Exception::class)
     fun itSetsDetailsWhenNoDeliveryService() {
-        trafficRouter!!.route(request, track)
+        trafficRouter.route(request, track)
         Mockito.verify(track).setResult(ResultType.MISS)
         Mockito.verify(track).setResultDetails(ResultDetails.LOCALIZED_DNS)
     }
@@ -295,7 +295,7 @@ class DNSRoutingMissesTest {
         Mockito.`when`(deliveryService.routingName).thenReturn("edge")
         Mockito.`when`(deliveryService.isDns).thenReturn(true)
         Mockito.doReturn(deliveryService).`when`(trafficRouter).selectDeliveryService(request)
-        trafficRouter!!.route(request, track)
+        trafficRouter.route(request, track)
         Mockito.verify(track).setResult(ResultType.MISS)
         Mockito.verify(track).setResultDetails(ResultDetails.DS_NO_BYPASS)
     }
@@ -314,7 +314,7 @@ class DNSRoutingMissesTest {
         )
         Mockito.`when`(bypassDestination["DNS"]).thenReturn(null)
         Whitebox.setInternalState(deliveryService, "bypassDestination", bypassDestination)
-        trafficRouter!!.route(request, track)
+        trafficRouter.route(request, track)
         Mockito.verify(track).setResult(ResultType.DS_REDIRECT)
         Mockito.verify(track).setResultDetails(ResultDetails.DS_BYPASS)
     }
@@ -334,7 +334,7 @@ class DNSRoutingMissesTest {
                 Request::class.java
             )
         )
-        trafficRouter!!.route(request, track)
+        trafficRouter.route(request, track)
         Mockito.verify(track).setResult(ResultType.MISS)
         Mockito.verify(track).setResultDetails(ResultDetails.DS_CZ_ONLY)
     }
@@ -351,7 +351,7 @@ class DNSRoutingMissesTest {
         Mockito.`when`(deliveryService.isDns).thenReturn(true)
         Mockito.`when`(deliveryService.isCoverageZoneOnly).thenReturn(false)
         Mockito.doReturn(deliveryService).`when`(trafficRouter).selectDeliveryService(request)
-        trafficRouter!!.route(request, track)
+        trafficRouter.route(request, track)
         Mockito.verify(track).setResult(ResultType.MISS)
         Mockito.verify(track).setResultDetails(ResultDetails.DS_CLIENT_GEO_UNSUPPORTED)
     }
@@ -378,7 +378,7 @@ class DNSRoutingMissesTest {
         Mockito.doReturn(cacheLocation).`when`(trafficRouter)
             .getCoverageZoneCacheLocation("192.168.34.56", deliveryService, IPVersions.IPV4ONLY)
         Mockito.doReturn(cacheRegister).`when`(trafficRouter).cacheRegister
-        trafficRouter!!.route(request, track)
+        trafficRouter.route(request, track)
         Mockito.verify(track).setResult(ResultType.MISS)
         Mockito.verify(track).setResultDetails(ResultDetails.DS_CLIENT_GEO_UNSUPPORTED)
     }

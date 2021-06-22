@@ -307,7 +307,7 @@ object ExternalTestSuite {
         println(">>>>>>>> Going to use tmp directory '" + tmpDeployDir + "' as traffic router deploy directory")
         println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
         println()
-        System.setProperty("deploy.dir", tmpDeployDir.getAbsolutePath())
+        System.setProperty("deploy.dir", tmpDeployDir!!.getAbsolutePath())
         System.setProperty("dns.zones.dir", "src/test/var/auto-zones")
         System.setProperty("cache.health.json.refresh.period", "10000")
         System.setProperty("cache.config.json.refresh.period", "10000")

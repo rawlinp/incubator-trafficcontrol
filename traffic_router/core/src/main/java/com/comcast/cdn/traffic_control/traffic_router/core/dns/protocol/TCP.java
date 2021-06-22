@@ -71,10 +71,7 @@ public class TCP extends AbstractProtocol {
         return Integer.MAX_VALUE;
     }
 
-    /**
-     * This class is package private for unit testing purposes.
-     */
-    class TCPSocketHandler implements SocketHandler {
+    public class TCPSocketHandler implements SocketHandler {
         private final Socket socket;
         private boolean cancel;
 

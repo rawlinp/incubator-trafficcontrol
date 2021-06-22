@@ -244,8 +244,8 @@ class NameServerMainTest {
         p1 = Mockito.mock(Protocol::class.java)
         p2 = Mockito.mock(Protocol::class.java)
         protocols = ArrayList()
-        protocols.add(p1)
-        protocols.add(p2)
+        protocols!!.add(p1)
+        protocols!!.add(p2)
         executorService = Mockito.mock(ExecutorService::class.java)
         main = NameServerMain()
         main!!.protocols = protocols
@@ -256,15 +256,15 @@ class NameServerMainTest {
     @Throws(Exception::class)
     fun testDestroy() {
         main!!.destroy()
-        Mockito.verify(p1).shutdown()
-        Mockito.verify(p2).shutdown()
+        Mockito.verify(p1)!!.shutdown()
+        Mockito.verify(p2)!!.shutdown()
     }
 
     @Test
     @Throws(Exception::class)
     fun testInit() {
         main!!.init()
-        Mockito.verify(executorService).submit(p1)
-        Mockito.verify(executorService).submit(p2)
+        Mockito.verify(executorService)!!.submit(p1)
+        Mockito.verify(executorService)!!.submit(p2)
     }
 }

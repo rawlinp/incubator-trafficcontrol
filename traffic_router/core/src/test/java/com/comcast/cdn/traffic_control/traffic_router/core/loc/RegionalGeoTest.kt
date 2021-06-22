@@ -432,7 +432,7 @@ class RegionalGeoTest {
         PowerMockito.`when`(ds.id).thenReturn("ds-geoblock-include")
         PowerMockito.`when`(ds.createURIString(request, cache)).thenReturn(requestUrl)
         val tr = PowerMockito.mock(TrafficRouter::class.java)
-        PowerMockito.`when`(tr.getClientGeolocation(clientIp, track, ds)).thenReturn(Geolocation(42, -71))
+        PowerMockito.`when`(tr.getClientGeolocation(clientIp, track, ds)).thenReturn(Geolocation(42.0, -71.0))
         val routeResult = HTTPRouteResult(true)
         val firstUrl = "http://example.com/url1.m3u8"
         routeResult.addUrl(URL(firstUrl))

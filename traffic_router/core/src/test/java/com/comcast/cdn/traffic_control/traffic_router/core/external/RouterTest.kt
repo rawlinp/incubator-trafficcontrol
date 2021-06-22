@@ -251,7 +251,7 @@ import javax.net.ssl.TrustManagerFactory
 @Category(ExternalTest::class)
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 class RouterTest {
-    private var httpClient: CloseableHttpClient? = null
+    private var httpClient: CloseableHttpClient = HttpClientBuilder.create().build()
     private val cdnDomain = ".thecdn.example.com"
     private var deliveryServiceId: String? = null
     private var deliveryServiceDomain: String? = null
@@ -276,6 +276,7 @@ class RouterTest {
     private val testHttpPort = System.getProperty("testHttpServerPort", "8889")
     private var trustStore: KeyStore? = null
     private val routerDnsPort = Integer.valueOf(System.getProperty("dns.udp.port", "1053"))
+
     @Before
     @Throws(Exception::class)
     fun before() {
@@ -368,7 +369,7 @@ class RouterTest {
         Assert.assertThat(httpsOnlyLocations.isEmpty(), IsEqual.equalTo(false))
         trustStore = KeyStore.getInstance(KeyStore.getDefaultType())
         val keystoreStream = javaClass.classLoader.getResourceAsStream("keystore.jks")
-        trustStore.load(keystoreStream, "changeit".toCharArray())
+        trustStore!!.load(keystoreStream, "changeit".toCharArray())
         TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()).init(trustStore)
         httpClient = HttpClientBuilder.create()
             .setSSLSocketFactory(ClientSslSocketFactory("tr.https-only-test.thecdn.example.com"))
@@ -380,9 +381,7 @@ class RouterTest {
     @After
     @Throws(IOException::class)
     fun after() {
-        if (httpClient != null) {
-            httpClient!!.close()
-        }
+        httpClient.close()
     }
 
     @Test
@@ -420,7 +419,7 @@ class RouterTest {
         httpGet.addHeader("Host", "tr.$deliveryServiceId.bar")
         var response: CloseableHttpResponse? = null
         try {
-            response = httpClient!!.execute(httpGet)
+            response = httpClient.execute(httpGet)
             Assert.assertThat(response.statusLine.statusCode, IsEqual.equalTo(302))
             val header = response.getFirstHeader("Location")
             Assert.assertThat(header.value, Matchers.isIn(validLocations))
@@ -437,7 +436,7 @@ class RouterTest {
         httpGet.addHeader("Host", "foo.$deliveryServiceId.bar")
         var response: CloseableHttpResponse? = null
         try {
-            response = httpClient!!.execute(httpGet)
+            response = httpClient.execute(httpGet)
             Assert.assertThat(response.statusLine.statusCode, IsEqual.equalTo(302))
         } finally {
             response?.close()
@@ -451,12 +450,12 @@ class RouterTest {
         httpGet.addHeader("Host", "tr.$deliveryServiceId.bar")
         var response: CloseableHttpResponse? = null
         try {
-            response = httpClient!!.execute(httpGet)
+            response = httpClient.execute(httpGet)
             Assert.assertThat(response.statusLine.statusCode, IsEqual.equalTo(302))
             val location = response.getFirstHeader("Location").value
             response.close()
             for (i in 0..99) {
-                response = httpClient!!.execute(httpGet)
+                response = httpClient.execute(httpGet)
                 Assert.assertThat(response.getFirstHeader("Location").value, IsEqual.equalTo(location))
                 response.close()
             }
@@ -472,7 +471,7 @@ class RouterTest {
         httpGet.addHeader("Host", "foo.invalid-delivery-service-id.bar")
         var response: CloseableHttpResponse? = null
         try {
-            response = httpClient!!.execute(httpGet)
+            response = httpClient.execute(httpGet)
             Assert.assertThat(response.statusLine.statusCode, IsEqual.equalTo(503))
         } finally {
             response?.close()
@@ -486,7 +485,7 @@ class RouterTest {
         httpGet.addHeader("Host", "tr.$httpsOnlyId.thecdn.example.com")
         var response: CloseableHttpResponse? = null
         try {
-            response = httpClient!!.execute(httpGet)
+            response = httpClient.execute(httpGet)
             Assert.assertThat(response.statusLine.statusCode, IsEqual.equalTo(302))
             val header = response.getFirstHeader("Location")
             Assert.assertThat(header.value, Matchers.isIn(httpsOnlyLocations))
@@ -504,7 +503,7 @@ class RouterTest {
         httpGet.addHeader("Host", "tr.$httpsOnlyId.bar")
         var response: CloseableHttpResponse? = null
         try {
-            response = httpClient!!.execute(httpGet)
+            response = httpClient.execute(httpGet)
             Assert.assertThat(response.statusLine.statusCode, IsEqual.equalTo(503))
         } finally {
             response?.close()
@@ -516,7 +515,7 @@ class RouterTest {
     fun itRedirectsFromHttpToHttps() {
         var httpGet = HttpGet("http://localhost:$routerHttpPort/stuff?fakeClientIpAddress=12.34.56.78")
         httpGet.addHeader("Host", "tr.$httpToHttpsId.bar")
-        httpClient!!.execute(httpGet).use { response ->
+        httpClient.execute(httpGet).use { response ->
             Assert.assertThat(response.statusLine.statusCode, IsEqual.equalTo(302))
             val header = response.getFirstHeader("Location")
             Assert.assertThat(header.value, Matchers.isIn(httpToHttpsLocations))
@@ -548,7 +547,7 @@ class RouterTest {
         httpGet.addHeader("Host", "tr.$deliveryServiceId.bar")
         var response: CloseableHttpResponse? = null
         try {
-            response = httpClient!!.execute(httpGet)
+            response = httpClient.execute(httpGet)
             Assert.assertThat(
                 "Response 503 expected got" + response.statusLine.statusCode,
                 response.statusLine.statusCode,
@@ -564,7 +563,7 @@ class RouterTest {
     fun itPreservesProtocolForHttpAndHttps() {
         var httpGet = HttpGet("http://localhost:$routerHttpPort/stuff?fakeClientIpAddress=12.34.56.78")
         httpGet.addHeader("Host", "tr.$httpAndHttpsId.bar")
-        httpClient!!.execute(httpGet).use { response ->
+        httpClient.execute(httpGet).use { response ->
             Assert.assertThat(response.statusLine.statusCode, IsEqual.equalTo(302))
             val header = response.getFirstHeader("Location")
             Assert.assertThat(header.value, Matchers.isIn(httpAndHttpsLocations))
@@ -594,7 +593,7 @@ class RouterTest {
     fun itRejectsCrConfigWithMissingCert() {
         var httpGet = HttpGet("http://localhost:$routerHttpPort/stuff?fakeClientIpAddress=12.34.56.78")
         httpGet.addHeader("Host", "tr.$httpOnlyId.bar")
-        httpClient!!.execute(httpGet).use { response ->
+        httpClient.execute(httpGet).use { response ->
             Assert.assertThat(response.statusLine.statusCode, IsEqual.equalTo(302))
             Assert.assertThat(
                 response.getFirstHeader("Location").value, Matchers.isOneOf(
@@ -752,7 +751,7 @@ class RouterTest {
         httpGet.addHeader("Host", "tr.$deliveryServiceId.bar")
         var response: CloseableHttpResponse? = null
         try {
-            response = httpClient!!.execute(httpGet)
+            response = httpClient.execute(httpGet)
             Assert.assertThat(response.statusLine.statusCode, IsEqual.equalTo(200))
             val entity = response.entity
             val objectMapper = ObjectMapper(JsonFactory())
@@ -773,7 +772,7 @@ class RouterTest {
         httpHead.addHeader("Host", "tr.$deliveryServiceId.bar")
         var response: CloseableHttpResponse? = null
         try {
-            response = httpClient!!.execute(httpHead)
+            response = httpClient.execute(httpHead)
             Assert.assertThat(response.statusLine.statusCode, IsEqual.equalTo(200))
             Assert.assertThat("Failed getting null body for HEAD request", response.entity, Matchers.nullValue())
         } finally {

@@ -233,9 +233,10 @@ import org.powermock.reflect.Whitebox
 
 class TrafficRouterHTTPRoutingMissesTest {
     private var request: HTTPRequest? = null
-    private var trafficRouter: TrafficRouter? = null
-    private var track: StatTracker.Track? = null
+    private var trafficRouter: TrafficRouter = Mockito.mock(TrafficRouter::class.java)
+    private var track: StatTracker.Track = Mockito.mock(StatTracker.Track::class.java)
     private var cacheRegister: CacheRegister? = null
+
     @Before
     @Throws(Exception::class)
     fun before() {
@@ -252,7 +253,7 @@ class TrafficRouterHTTPRoutingMissesTest {
     @Test
     @Throws(Exception::class)
     fun itSetsDetailsWhenNoDeliveryService() {
-        trafficRouter!!.route(request, track)
+        trafficRouter.route(request, track)
         Mockito.verify(track).setResult(ResultType.DS_MISS)
         Mockito.verify(track).setResultDetails(ResultDetails.DS_NOT_FOUND)
     }

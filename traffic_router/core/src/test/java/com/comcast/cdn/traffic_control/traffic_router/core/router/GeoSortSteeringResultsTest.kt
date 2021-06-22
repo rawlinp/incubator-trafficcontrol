@@ -238,7 +238,7 @@ import java.util.Collections
 @RunWith(PowerMockRunner::class)
 @PrepareForTest(Collections::class)
 class GeoSortSteeringResultsTest {
-    private var trafficRouter: TrafficRouter? = null
+    private var trafficRouter: TrafficRouter = Mockito.mock(TrafficRouter::class.java)
     private var steeringResults: MutableList<SteeringResult>? = null
     private var clientLocation: Geolocation? = null
     private var deliveryService: DeliveryService? = null
@@ -266,20 +266,20 @@ class GeoSortSteeringResultsTest {
 
     @Test
     fun testNullClientIP() {
-        trafficRouter!!.geoSortSteeringResults(steeringResults, null, deliveryService)
+        trafficRouter.geoSortSteeringResults(steeringResults, null, deliveryService)
         Mockito.verify(trafficRouter, Mockito.never()).getClientLocationByCoverageZoneOrGeo(null, deliveryService)
     }
 
     @Test
     fun testEmptyClientIP() {
-        trafficRouter!!.geoSortSteeringResults(steeringResults, "", deliveryService)
+        trafficRouter.geoSortSteeringResults(steeringResults, "", deliveryService)
         Mockito.verify(trafficRouter, Mockito.never()).getClientLocationByCoverageZoneOrGeo("", deliveryService)
     }
 
     @Test
     fun testNoSteeringTargetsHaveGeolocations() {
         steeringResults!!.add(SteeringResult(SteeringTarget(), deliveryService))
-        trafficRouter!!.geoSortSteeringResults(steeringResults, "::1", deliveryService)
+        trafficRouter.geoSortSteeringResults(steeringResults, "::1", deliveryService)
         Mockito.verify(trafficRouter, Mockito.never()).getClientLocationByCoverageZoneOrGeo("::1", deliveryService)
     }
 
@@ -290,7 +290,7 @@ class GeoSortSteeringResultsTest {
         steeringResults!!.add(SteeringResult(steeringTarget, deliveryService))
         clientLocation = null
         PowerMockito.mockStatic(Collections::class.java)
-        trafficRouter!!.geoSortSteeringResults(steeringResults, "::1", deliveryService)
+        trafficRouter.geoSortSteeringResults(steeringResults, "::1", deliveryService)
         PowerMockito.verifyStatic(Mockito.never())
     }
 
@@ -319,7 +319,7 @@ class GeoSortSteeringResultsTest {
         val resultGeo = SteeringResult(target, deliveryService)
         resultGeo.cache = cache
         steeringResults!!.add(resultGeo)
-        trafficRouter!!.geoSortSteeringResults(steeringResults, "::1", deliveryService)
+        trafficRouter.geoSortSteeringResults(steeringResults, "::1", deliveryService)
         Assert.assertEquals(resultNoGeoNegativeOrder, steeringResults!![0])
         Assert.assertEquals(resultGeo, steeringResults!![1])
         Assert.assertEquals(resultNoGeoZeroOrder, steeringResults!![2])

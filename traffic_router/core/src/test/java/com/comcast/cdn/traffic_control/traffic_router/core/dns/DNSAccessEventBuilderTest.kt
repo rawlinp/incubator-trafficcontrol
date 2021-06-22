@@ -252,9 +252,9 @@ class DNSAccessEventBuilderTest {
         Mockito.`when`(random.nextInt(0xffff)).thenReturn(65535)
         PowerMockito.whenNew(Random::class.java).withNoArguments().thenReturn(random)
         client = Mockito.mock(InetAddress::class.java)
-        Mockito.`when`(client.getHostAddress()).thenReturn("192.168.10.11")
+        Mockito.`when`(client!!.getHostAddress()).thenReturn("192.168.10.11")
         resolver = Mockito.mock(InetAddress::class.java)
-        Mockito.`when`(resolver.getHostAddress()).thenReturn("10.0.0.211")
+        Mockito.`when`(resolver!!.getHostAddress()).thenReturn("10.0.0.211")
     }
 
     @Test

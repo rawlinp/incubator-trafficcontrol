@@ -251,10 +251,10 @@ class HTTPAccessEventBuilderTest {
         Mockito.`when`(finishDate.time).thenReturn(144140678125L)
         PowerMockito.whenNew(Date::class.java).withNoArguments().thenReturn(finishDate)
         request = Mockito.mock(HttpServletRequest::class.java)
-        Mockito.`when`(request.getRequestURL()).thenReturn(StringBuffer("http://example.com/index.html?foo=bar"))
-        Mockito.`when`(request.getMethod()).thenReturn("GET")
-        Mockito.`when`(request.getProtocol()).thenReturn("HTTP/1.1")
-        Mockito.`when`(request.getRemoteAddr()).thenReturn("192.168.7.6")
+        Mockito.`when`(request!!.getRequestURL()).thenReturn(StringBuffer("http://example.com/index.html?foo=bar"))
+        Mockito.`when`(request!!.getMethod()).thenReturn("GET")
+        Mockito.`when`(request!!.getProtocol()).thenReturn("HTTP/1.1")
+        Mockito.`when`(request!!.getRemoteAddr()).thenReturn("192.168.7.6")
         PowerMockito.mockStatic(System::class.java)
     }
 

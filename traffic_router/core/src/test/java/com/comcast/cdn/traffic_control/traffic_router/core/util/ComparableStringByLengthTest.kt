@@ -255,7 +255,7 @@ class ComparableStringByLengthTest {
         val strings = arrayOf(
             "a", "ba", "b", "bac", "ab", "abc"
         )
-        val set: MutableSet<*> = TreeSet<Any?>()
+        val set: MutableSet<ComparableStringByLength> = TreeSet<ComparableStringByLength>()
         for (string in strings) {
             set.add(ComparableStringByLength(string))
         }
@@ -274,8 +274,8 @@ class ComparableStringByLengthTest {
         MatcherAssert.assertThat(abc == abc, Matchers.equalTo(true))
         MatcherAssert.assertThat(abc == ComparableStringByLength("abc"), Matchers.equalTo(true))
         MatcherAssert.assertThat(abc == null, Matchers.equalTo(false))
-        MatcherAssert.assertThat(abc == "", Matchers.equalTo(false))
-        MatcherAssert.assertThat(abc == 1L, Matchers.equalTo(false))
+        MatcherAssert.assertThat(abc.equals(""), Matchers.equalTo(false))
+        MatcherAssert.assertThat(abc.equals(1L), Matchers.equalTo(false))
     }
 
     @Test

@@ -326,7 +326,7 @@ class ZoneManagerTest {
     private fun fact(n: Int): BigInteger {
         var p = BigInteger("1")
         for (c in n downTo 1) {
-            p = p.multiply(BigInteger.valueOf(c))
+            p = p.multiply(BigInteger.valueOf(c.toLong()))
         }
         return p
     }
@@ -341,7 +341,7 @@ class ZoneManagerTest {
                 Files.exists(Paths.get(TestBase.monitorPropertiesPath)),
                 Matchers.equalTo(true)
             )
-            context = TestBase.getContext()
+            context = TestBase.context
         }
     }
 }

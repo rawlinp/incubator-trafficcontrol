@@ -246,17 +246,17 @@ class AbstractServiceUpdaterTest {
     @Throws(Exception::class)
     fun before() {
         databaseFile = Mockito.mock(File::class.java)
-        Mockito.`when`(databaseFile.exists()).thenReturn(true)
-        Mockito.`when`(databaseFile.lastModified()).thenReturn(1L)
+        Mockito.`when`(databaseFile!!.exists()).thenReturn(true)
+        Mockito.`when`(databaseFile!!.lastModified()).thenReturn(1L)
         databasePath = Mockito.mock(Path::class.java)
-        Mockito.`when`(databasePath.toFile()).thenReturn(databaseFile)
+        Mockito.`when`(databasePath!!.toFile()).thenReturn(databaseFile)
         databasesDirectory = Mockito.mock(Path::class.java)
-        Mockito.`when`(databasesDirectory.resolve(Matchers.anyString())).thenReturn(databasePath)
+        Mockito.`when`(databasesDirectory!!.resolve(Matchers.anyString())).thenReturn(databasePath)
         PowerMockito.mockStatic(Files::class.java)
         PowerMockito.`when`(Files.exists(Matchers.any(Path::class.java))).thenReturn(true)
         connection = PowerMockito.mock(HttpURLConnection::class.java)
-        Mockito.`when`(connection.getHeaderField("ETag")).thenReturn("version-1")
-        Mockito.`when`(connection.getResponseCode()).thenReturn(304)
+        Mockito.`when`(connection!!.getHeaderField("ETag")).thenReturn("version-1")
+        Mockito.`when`(connection!!.getResponseCode()).thenReturn(304)
         val url = PowerMockito.mock(URL::class.java)
         Mockito.`when`(url.openConnection()).thenReturn(connection)
         PowerMockito.whenNew(URL::class.java).withAnyArguments().thenReturn(url)
@@ -269,12 +269,12 @@ class AbstractServiceUpdaterTest {
         updater.setDatabasesDirectory(databasesDirectory)
         updater.dataBaseURL = "http://www.example.com"
         updater.updateDatabase()
-        Mockito.verify(connection, Mockito.times(0))
+        Mockito.verify(connection, Mockito.times(0))!!
             .setRequestProperty(Matchers.eq("If-None-Match"), Matchers.anyString())
-        Mockito.verify(connection).getHeaderField("ETag")
+        Mockito.verify(connection)!!.getHeaderField("ETag")
         updater.updateDatabase()
-        Mockito.verify(connection).setRequestProperty(Matchers.eq("If-None-Match"), Matchers.anyString())
-        Mockito.verify(connection, Mockito.times(2)).getHeaderField("ETag")
+        Mockito.verify(connection)!!.setRequestProperty(Matchers.eq("If-None-Match"), Matchers.anyString())
+        Mockito.verify(connection, Mockito.times(2))!!.getHeaderField("ETag")
     }
 
     internal inner class Updater : AbstractServiceUpdater() {

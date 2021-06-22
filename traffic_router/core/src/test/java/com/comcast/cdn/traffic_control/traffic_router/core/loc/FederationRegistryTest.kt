@@ -233,7 +233,7 @@ import org.junit.Test
 import java.util.ArrayList
 
 class FederationRegistryTest {
-    private var federations: MutableList<Federation>? = null
+    private var federations: MutableList<Federation> = ArrayList()
     @Before
     @Throws(Exception::class)
     fun before() {

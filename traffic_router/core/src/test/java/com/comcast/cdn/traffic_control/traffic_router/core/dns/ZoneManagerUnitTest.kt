@@ -281,8 +281,8 @@ class ZoneManagerUnitTest {
         Mockito.`when`(zone.origin).thenReturn(Name(qname, 1))
         var builder = DNSAccessRecord.Builder(1L, client)
         builder = Mockito.spy(builder)
-        Mockito.doReturn(zone).`when`(zoneManager).getZone(qname, Type.A)
-        PowerMockito.doCallRealMethod().`when`(zoneManager).getZone(qname, Type.A, client, false, builder)
+        Mockito.doReturn(zone).`when`(zoneManager)!!.getZone(qname, Type.A)
+        PowerMockito.doCallRealMethod().`when`(zoneManager)!!.getZone(qname, Type.A, client, false, builder)
         zoneManager!!.getZone(qname, Type.A, client, false, builder)
         Mockito.verify(builder).resultType(
             Matchers.any(

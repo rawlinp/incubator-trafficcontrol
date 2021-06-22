@@ -221,6 +221,7 @@ import javax.management.MBeanServer
 import javax.management.ObjectName
 import com.comcast.cdn.traffic_control.traffic_router.shared.DeliveryServiceCertificatesMBean
 import com.comcast.cdn.traffic_control.traffic_router.shared.DeliveryServiceCertificates
+import com.nhaarman.mockitokotlin2.mock
 import org.springframework.context.support.FileSystemXmlApplicationContext
 import kotlin.jvm.JvmStatic
 import org.apache.catalina.startup.Catalina
@@ -249,7 +250,7 @@ class TCPTest {
     private var socket: Socket? = null
     private var executorService: ThreadPoolExecutor? = null
     private var cancelService: ExecutorService? = null
-    private var queue: LinkedBlockingQueue<*>? = null
+    private var queue: LinkedBlockingQueue<Runnable>? = null
     private var nameServer: NameServer? = null
     private var tcp: TCP? = null
     private var client: InetAddress? = null
@@ -263,7 +264,7 @@ class TCPTest {
         executorService = Mockito.mock(ThreadPoolExecutor::class.java)
         cancelService = Mockito.mock(ExecutorService::class.java)
         nameServer = Mockito.mock(NameServer::class.java)
-        queue = Mockito.mock(LinkedBlockingQueue::class.java)
+        queue = mock()
         tcp = TCP()
         tcp!!.serverSocket = serverSocket
         tcp!!.executorService = executorService
@@ -271,10 +272,10 @@ class TCPTest {
         tcp!!.nameServer = nameServer
         `in` = Mockito.mock(ByteArrayInputStream::class.java)
         client = InetAddress.getLocalHost()
-        Mockito.`when`(socket.getInetAddress()).thenReturn(client)
-        Mockito.`when`(socket.getInputStream()).thenReturn(`in`)
-        Mockito.`when`(executorService.getQueue()).thenReturn(queue)
-        Mockito.`when`(queue.size).thenReturn(0)
+        Mockito.`when`(socket!!.getInetAddress()).thenReturn(client)
+        Mockito.`when`(socket!!.getInputStream()).thenReturn(`in`)
+        Mockito.`when`(executorService!!.getQueue()).thenReturn(queue)
+        Mockito.`when`(queue!!.size).thenReturn(0)
     }
 
     @Test
@@ -288,7 +289,7 @@ class TCPTest {
             SocketHandler::class.java
         )
         tcp!!.submit(r)
-        Mockito.verify(executorService).submit(r)
+        Mockito.verify(executorService)!!.submit(r)
     }
 
     @Test
@@ -384,7 +385,7 @@ class TCPTest {
         PowerMockito.whenNew(Message::class.java).withNoArguments().thenReturn(tmp)
         val handler = tcp!!.TCPSocketHandler(socket)
         handler.run()
-        Mockito.verify(socket).close()
+        Mockito.verify(socket)!!.close()
         val expected = expectedResponseOut.toByteArray()
         val actual = responseOut.toByteArray()
         Assert.assertArrayEquals(expected, actual)

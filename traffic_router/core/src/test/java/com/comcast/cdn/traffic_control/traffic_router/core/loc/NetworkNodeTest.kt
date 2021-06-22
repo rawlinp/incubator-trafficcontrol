@@ -250,7 +250,7 @@ class NetworkNodeTest {
 
     @Throws(Exception::class)
     private fun setUp(filename: String, useDeep: Boolean): NetworkNode {
-        val testNetMap: MutableMap<String, MutableList<String>> = if (useDeep) deepNetMap else netMap
+        val testNetMap: MutableMap<String, MutableList<String>> = if (useDeep) deepNetMap else netMap as MutableMap<String, MutableList<String>>
         val file = File(javaClass.classLoader.getResource(filename).toURI())
         val nn = NetworkNode.generateTree(file, false, useDeep)
         val mapper = ObjectMapper()

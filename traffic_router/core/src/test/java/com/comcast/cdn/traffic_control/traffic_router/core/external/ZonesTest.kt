@@ -260,7 +260,7 @@ class ZonesTest {
             val actual = EntityUtils.toString(response.entity)
             val zoneStats: Map<String, Any> = ObjectMapper().readValue<HashMap<String, Any>>(
                 actual,
-                object : TypeReference<HashMap<String?, Any?>?>() {})
+                object : TypeReference<HashMap<String, Any>?>() {})
             val dynamicZonesStats = zoneStats["dynamicZoneCaches"] as Map<String, Any>?
             MatcherAssert.assertThat(
                 dynamicZonesStats!!.keys, Matchers.containsInAnyOrder(

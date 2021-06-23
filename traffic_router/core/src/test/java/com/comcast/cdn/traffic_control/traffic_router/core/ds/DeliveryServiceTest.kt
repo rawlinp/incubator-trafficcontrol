@@ -14,8 +14,6 @@
  */
 package com.comcast.cdn.traffic_control.traffic_router.core.ds
 
-import kotlin.Throws
-import java.lang.Exception
 import com.comcast.cdn.traffic_control.traffic_router.core.request.HTTPRequest
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.hamcrest.MatcherAssert

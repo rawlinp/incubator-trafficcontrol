@@ -85,7 +85,7 @@ class TrafficRouter(cr: CacheRegister,
                     trafficOpsUtils: TrafficOpsUtils?,
                     federationRegistry: FederationRegistry,
                     trafficRouterManager: TrafficRouterManager?) {
-    val cacheRegister: CacheRegister?
+    val cacheRegister: CacheRegister
     val zoneManager: ZoneManager
     val geolocationService: GeolocationService
     private val geolocationService6: GeolocationService

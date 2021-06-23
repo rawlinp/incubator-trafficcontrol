@@ -46,8 +46,7 @@ class AnonymousIpTest {
         anonymousIpService.reloadDatabase()
         assert(anonymousIpService.isInitialized)
         trafficRouter = Mockito.mock(TrafficRouter::class.java)
-        Mockito.`when`(trafficRouter!!.getAnonymousIpDatabaseService()).thenReturn(anonymousIpService)
-        assert(trafficRouter!!.getAnonymousIpDatabaseService() != null)
+        Mockito.`when`(trafficRouter!!.anonymousIpDatabaseService).thenReturn(anonymousIpService)
     }
 
     @Test

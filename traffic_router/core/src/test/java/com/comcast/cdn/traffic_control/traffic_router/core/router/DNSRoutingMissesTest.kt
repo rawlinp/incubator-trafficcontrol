@@ -40,7 +40,7 @@ import org.xbill.DNS.Type
 @RunWith(PowerMockRunner::class)
 @PrepareForTest(DeliveryService::class, TrafficRouter::class)
 class DNSRoutingMissesTest {
-    private var request: DNSRequest? = null
+    private var request: DNSRequest = Mockito.mock(DNSRequest::class.java)
     private var trafficRouter: TrafficRouter = Mockito.mock(TrafficRouter::class.java)
     private var track: StatTracker.Track = Mockito.mock(StatTracker.Track::class.java)
 
@@ -60,7 +60,7 @@ class DNSRoutingMissesTest {
             )
         ).thenReturn(null)
         trafficRouter = Mockito.mock(TrafficRouter::class.java)
-        Mockito.`when`(trafficRouter.getCacheRegister()).thenReturn(
+        Mockito.`when`(trafficRouter.cacheRegister).thenReturn(
             Mockito.mock(
                 CacheRegister::class.java
             )

@@ -94,7 +94,7 @@ class CoverageZoneTest {
                 IPVersions.IPV4ONLY
             )
         ).thenCallRealMethod()
-        Mockito.`when`(trafficRouter.getCacheRegister()).thenReturn(cacheRegister)
+        Mockito.`when`(trafficRouter.cacheRegister).thenReturn(cacheRegister)
         Mockito.`when`(
             trafficRouter.orderLocations(
                 Matchers.anyListOf(
@@ -134,7 +134,7 @@ class CoverageZoneTest {
     fun trafficRouterReturnsNearestCacheGroupForDeliveryService() {
         val cacheLocation =
             trafficRouter!!.getCoverageZoneCacheLocation("12.23.34.45", "delivery-service-1", IPVersions.IPV4ONLY)
-        MatcherAssert.assertThat(cacheLocation.id, org.hamcrest.Matchers.equalTo("west-cache-group"))
+        MatcherAssert.assertThat(cacheLocation!!.id, org.hamcrest.Matchers.equalTo("west-cache-group"))
         // NOTE: far-east-cache-group is actually closer to the client but isn't enabled for CZ-localization and must be filtered out
     }
 }

@@ -81,10 +81,10 @@ class TrafficRouter(cr: CacheRegister,
                     geolocationService: GeolocationService,
                     geolocationService6: GeolocationService,
                     anonymousIpService: AnonymousIpDatabaseService,
-                    statTracker: StatTracker?,
-                    trafficOpsUtils: TrafficOpsUtils?,
+                    statTracker: StatTracker,
+                    trafficOpsUtils: TrafficOpsUtils,
                     federationRegistry: FederationRegistry,
-                    trafficRouterManager: TrafficRouterManager?) {
+                    trafficRouterManager: TrafficRouterManager) {
     val cacheRegister: CacheRegister
     val zoneManager: ZoneManager
     val geolocationService: GeolocationService
@@ -278,8 +278,8 @@ class TrafficRouter(cr: CacheRegister,
      * @throws GeolocationException if the client could not be located.
      */
     @Throws(GeolocationException::class)
-    fun getLocation(clientIP: String): Geolocation {
-        return if (clientIP.contains(":")) geolocationService6.location(clientIP) else geolocationService.location(clientIP)
+    fun getLocation(clientIP: String?): Geolocation {
+        return if (clientIP?.contains(":") == true) geolocationService6.location(clientIP) else geolocationService.location(clientIP)
     }
 
     /**
@@ -325,7 +325,7 @@ class TrafficRouter(cr: CacheRegister,
      * @throws GeolocationException if the client could not be located.
      */
     @Throws(GeolocationException::class)
-    fun getLocation(clientIP: String, geolocationProvider: String?, deliveryServiceId: String?): Geolocation {
+    fun getLocation(clientIP: String?, geolocationProvider: String?, deliveryServiceId: String?): Geolocation {
         val customGeolocationService = getGeolocationService(geolocationProvider, deliveryServiceId)
         return if (customGeolocationService != null) customGeolocationService.location(clientIP) else getLocation(clientIP)
     }
@@ -338,8 +338,8 @@ class TrafficRouter(cr: CacheRegister,
      * @throws GeolocationException if the client could not be located.
      */
     @Throws(GeolocationException::class)
-    fun getLocation(clientIP: String, deliveryService: DeliveryService): Geolocation {
-        return getLocation(clientIP, deliveryService.geolocationProvider, deliveryService.id)
+    fun getLocation(clientIP: String?, deliveryService: DeliveryService?): Geolocation {
+        return getLocation(clientIP, deliveryService?.geolocationProvider, deliveryService?.id)
     }
 
     /**
@@ -1402,7 +1402,7 @@ class TrafficRouter(cr: CacheRegister,
      * geo-located (and deliveryService has no default "miss" location set) or if the client is
      * blocked by the Delivery Service's settings.
      */
-    fun getClientLocationByCoverageZoneOrGeo(clientIP: String, deliveryService: DeliveryService): Geolocation? {
+    fun getClientLocationByCoverageZoneOrGeo(clientIP: String?, deliveryService: DeliveryService?): Geolocation? {
         val clientLocation: Geolocation?
         val networkNode = getNetworkNode(clientIP)
         clientLocation = if (networkNode != null && networkNode.geolocation != null) {
@@ -1414,7 +1414,7 @@ class TrafficRouter(cr: CacheRegister,
                 null
             }
         }
-        return deliveryService.supportLocation(clientLocation)
+        return deliveryService?.supportLocation(clientLocation)
     }
 
     /**
@@ -1427,9 +1427,9 @@ class TrafficRouter(cr: CacheRegister,
      * @param deliveryService The Delivery Service being served. This is used to help geo-locate the
      * client according to blocking and fallback configuration.
      */
-    fun geoSortSteeringResults(steeringResults: List<SteeringResult>, clientIP: String?, deliveryService: DeliveryService) {
+    fun geoSortSteeringResults(steeringResults: List<SteeringResult>?, clientIP: String?, deliveryService: DeliveryService?) {
         if (clientIP == null || clientIP.isEmpty()
-                || steeringResults.stream().allMatch { t: SteeringResult -> t.steeringTarget.geolocation == null }) {
+                || steeringResults?.stream()?.allMatch { t: SteeringResult -> t.steeringTarget.geolocation == null } == true) {
             return
         }
         val clientLocation = getClientLocationByCoverageZoneOrGeo(clientIP, deliveryService)
@@ -1637,7 +1637,7 @@ class TrafficRouter(cr: CacheRegister,
      * @param builder Used to build a zone if one has not already been created containing qname.
      * @return A zone containing records of type qtype that contains qname. This can be null
      */
-    fun getZone(qname: Name?, qtype: Int, clientAddress: InetAddress?, isDnssecRequest: Boolean, builder: DNSAccessRecord.Builder?): Zone {
+    fun getZone(qname: Name, qtype: Int, clientAddress: InetAddress, isDnssecRequest: Boolean, builder: DNSAccessRecord.Builder): Zone? {
         return zoneManager.getZone(qname, qtype, clientAddress, isDnssecRequest, builder)
     }
 

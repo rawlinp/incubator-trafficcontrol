@@ -14,97 +14,76 @@
  */
 package com.comcast.cdn.traffic_control.traffic_router.core.dns
 
-import com.comcast.cdn.traffic_control.traffic_router.core.router.TrafficRouter.cacheRegister
-import com.comcast.cdn.traffic_control.traffic_router.core.router.TrafficRouter.isDnssecZoneDiffingEnabled
-import com.comcast.cdn.traffic_control.traffic_router.core.router.TrafficRouter.isEdgeHTTPRouting
-import com.comcast.cdn.traffic_control.traffic_router.core.router.TrafficRouter.selectTrafficRoutersMiss
-import com.comcast.cdn.traffic_control.traffic_router.core.router.TrafficRouter.selectTrafficRoutersLocalized
-import com.comcast.cdn.traffic_control.traffic_router.core.router.TrafficRouter.selectCachesByCZ
-import com.comcast.cdn.traffic_control.traffic_router.core.router.TrafficRouter.isConsistentDNSRouting
-import com.comcast.cdn.traffic_control.traffic_router.core.router.TrafficRouter.inetRecordsFromCaches
-import com.comcast.cdn.traffic_control.traffic_router.core.router.TrafficRouter.isEdgeDNSRouting
-import com.comcast.cdn.traffic_control.traffic_router.core.router.TrafficRouter.route
-import com.comcast.cdn.traffic_control.traffic_router.core.router.TrafficRouter
-import com.comcast.cdn.traffic_control.traffic_router.core.router.StatTracker
-import com.comcast.cdn.traffic_control.traffic_router.core.util.TrafficOpsUtils
-import com.comcast.cdn.traffic_control.traffic_router.core.router.TrafficRouterManager
-import com.comcast.cdn.traffic_control.traffic_router.core.dns.ZoneManager
+import com.comcast.cdn.traffic_control.traffic_router.core.ds.DeliveryService
+import com.comcast.cdn.traffic_control.traffic_router.core.edge.Cache
 import com.comcast.cdn.traffic_control.traffic_router.core.edge.CacheRegister
-import com.comcast.cdn.traffic_control.traffic_router.core.dns.SignatureManager
-import com.comcast.cdn.traffic_control.traffic_router.core.dns.ZoneKey
-import com.comcast.cdn.traffic_control.traffic_router.core.dns.DNSAccessRecord
+import com.comcast.cdn.traffic_control.traffic_router.core.edge.InetRecord
+import com.comcast.cdn.traffic_control.traffic_router.core.edge.Node.IPVersions
+import com.comcast.cdn.traffic_control.traffic_router.core.edge.Resolver
 import com.comcast.cdn.traffic_control.traffic_router.core.request.DNSRequest
 import com.comcast.cdn.traffic_control.traffic_router.core.router.DNSRouteResult
-import com.comcast.cdn.traffic_control.traffic_router.core.edge.InetRecord
-import org.xbill.DNS.SetResponse
-import org.xbill.DNS.RRset
-import org.xbill.DNS.ARecord
-import org.xbill.DNS.AAAARecord
-import org.xbill.DNS.TextParseException
-import kotlin.Throws
-import java.net.InetAddress
-import java.net.Inet6Address
-import com.google.common.cache.CacheStats
-import java.util.concurrent.ConcurrentMap
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.ExecutorService
+import com.comcast.cdn.traffic_control.traffic_router.core.router.StatTracker
+import com.comcast.cdn.traffic_control.traffic_router.core.router.TrafficRouter
+import com.comcast.cdn.traffic_control.traffic_router.core.router.TrafficRouterManager
 import com.comcast.cdn.traffic_control.traffic_router.core.util.JsonUtils
-import java.util.concurrent.Executors
-import java.lang.Runnable
-import java.util.concurrent.BlockingQueue
-import java.util.concurrent.LinkedBlockingQueue
-import com.comcast.cdn.traffic_control.traffic_router.core.dns.ZoneManager.ZoneCacheType
-import java.util.stream.Collectors
-import java.time.Instant
-import java.util.concurrent.TimeUnit
-import java.lang.InterruptedException
-import java.io.IOException
-import com.comcast.cdn.traffic_control.traffic_router.core.ds.DeliveryService
-import com.google.common.cache.CacheBuilderSpec
-import java.lang.RuntimeException
-import java.io.FileWriter
-import com.google.common.cache.CacheBuilder
-import com.google.common.cache.CacheLoader
-import java.security.GeneralSecurityException
-import com.comcast.cdn.traffic_control.traffic_router.core.dns.SignedZoneKey
-import com.comcast.cdn.traffic_control.traffic_router.core.dns.ZoneUtils
-import org.xbill.DNS.SOARecord
-import org.xbill.DNS.DClass
-import java.security.NoSuchAlgorithmException
-import java.util.concurrent.ExecutionException
-import com.comcast.cdn.traffic_control.traffic_router.geolocation.GeolocationException
-import com.comcast.cdn.traffic_control.traffic_router.core.edge.TrafficRouterLocation
-import com.comcast.cdn.traffic_control.traffic_router.core.edge.CacheLocation
-import com.comcast.cdn.traffic_control.traffic_router.core.edge.Node.IPVersions
-import org.xbill.DNS.NSECRecord
-import org.xbill.DNS.RRSIGRecord
-import org.xbill.DNS.CNAMERecord
-import org.xbill.DNS.TXTRecord
 import com.comcast.cdn.traffic_control.traffic_router.core.util.JsonUtilsException
-import org.xbill.DNS.NSRecord
-import com.comcast.cdn.traffic_control.traffic_router.core.edge.Cache.DeliveryServiceReference
-import com.comcast.cdn.traffic_control.traffic_router.core.edge.Resolver
+import com.comcast.cdn.traffic_control.traffic_router.core.util.TrafficOpsUtils
+import com.comcast.cdn.traffic_control.traffic_router.geolocation.GeolocationException
+
 import com.fasterxml.jackson.databind.JsonNode
+import com.google.common.cache.CacheBuilder
+import com.google.common.cache.CacheBuilderSpec
+import com.google.common.cache.CacheLoader
+import com.google.common.cache.CacheStats
 import com.google.common.cache.LoadingCache
 import com.google.common.cache.RemovalListener
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.ListenableFutureTask
 import org.apache.commons.io.IOUtils
 import org.apache.log4j.Logger
+import org.xbill.DNS.AAAARecord
+import org.xbill.DNS.ARecord
+import org.xbill.DNS.CNAMERecord
+import org.xbill.DNS.DClass
+import org.xbill.DNS.NSECRecord
+import org.xbill.DNS.NSRecord
 import org.xbill.DNS.Name
+import org.xbill.DNS.RRSIGRecord
+import org.xbill.DNS.RRset
 import org.xbill.DNS.Record
+import org.xbill.DNS.SOARecord
+import org.xbill.DNS.TXTRecord
+import org.xbill.DNS.TextParseException
 import org.xbill.DNS.Type
 import org.xbill.DNS.Zone
-import java.io.File
-import java.lang.Exception
-import java.lang.IllegalArgumentException
-import java.net.UnknownHostException
-import java.time.Duration
-import java.util.*
-import java.util.concurrent.Future
 
-class ZoneManager(tr: TrafficRouter, statTracker: StatTracker, trafficOpsUtils: TrafficOpsUtils, trafficRouterManager: TrafficRouterManager) : Resolver() {
+import java.io.File
+import java.io.FileWriter
+import java.io.IOException
+import java.net.Inet6Address
+import java.net.InetAddress
+import java.net.UnknownHostException
+import java.security.GeneralSecurityException
+import java.security.NoSuchAlgorithmException
+import java.time.Duration
+import java.time.Instant
+import java.util.ArrayList
+import java.util.Collections
+import java.util.HashMap
+import java.util.HashSet
+import java.util.concurrent.BlockingQueue
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentMap
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.Future
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
+import java.util.stream.Collectors
+
+class ZoneManager(tr: TrafficRouter, statTracker: StatTracker, trafficOpsUtils: TrafficOpsUtils?, trafficRouterManager: TrafficRouterManager) : Resolver() {
     /**
      * Gets trafficRouter.
      *
@@ -121,7 +100,7 @@ class ZoneManager(tr: TrafficRouter, statTracker: StatTracker, trafficOpsUtils: 
         initZoneCache(trafficRouter)
     }
 
-    private fun initSignatureManager(cacheRegister: CacheRegister, trafficOpsUtils: TrafficOpsUtils, trafficRouterManager: TrafficRouterManager) {
+    private fun initSignatureManager(cacheRegister: CacheRegister, trafficOpsUtils: TrafficOpsUtils?, trafficRouterManager: TrafficRouterManager) {
         val sm = SignatureManager(this, cacheRegister, trafficOpsUtils, trafficRouterManager)
         signatureManager = sm
     }
@@ -206,7 +185,7 @@ class ZoneManager(tr: TrafficRouter, statTracker: StatTracker, trafficOpsUtils: 
         if (sr.isSuccessful) {
             val answers = sr.answers()
             for (answer in answers) {
-                val it: Iterator<Record?> = answer.rrs()
+                val it: Iterator<Record?> = answer.rrs() as Iterator<Record?>
                 while (it.hasNext()) {
                     val r = it.next()
                     if (r is ARecord) {
@@ -223,7 +202,7 @@ class ZoneManager(tr: TrafficRouter, statTracker: StatTracker, trafficOpsUtils: 
         return null
     }
 
-    override fun resolve(fqdn: String): List<InetRecord> {
+    override fun resolve(fqdn: String): List<InetRecord>? {
         try {
             val name = Name(fqdn)
             val zone = getZone(name)
@@ -299,9 +278,11 @@ class ZoneManager(tr: TrafficRouter, statTracker: StatTracker, trafficOpsUtils: 
         private const val IP6 = "ip6"
         var zoneDirectory: File? = null
         private var signatureManager: SignatureManager? = null
+        @JvmStatic
         var topLevelDomain: Name? = null
             private set
         private const val AAAA = "AAAA"
+        @JvmStatic
         fun destroy() {
             zoneMaintenanceExecutor!!.shutdownNow()
             zoneExecutor!!.shutdownNow()
@@ -314,7 +295,7 @@ class ZoneManager(tr: TrafficRouter, statTracker: StatTracker, trafficOpsUtils: 
             if (!tld.endsWith(".")) {
                 tld = "$tld."
             }
-            setTopLevelDomain(Name(tld))
+            topLevelDomain = Name(tld)
         }
 
         protected fun initZoneCache(tr: TrafficRouter) {
@@ -467,16 +448,22 @@ class ZoneManager(tr: TrafficRouter, statTracker: StatTracker, trafficOpsUtils: 
         private fun createZoneCache(cacheType: ZoneCacheType, spec: CacheBuilderSpec = CacheBuilderSpec.parse("")): LoadingCache<ZoneKey?, Zone?> {
             val removalListener: RemovalListener<ZoneKey, Zone> = RemovalListener { removal -> LOGGER.debug(cacheType.toString() + " " + removal.key!!.javaClass.simpleName + " " + removal.key!!.name + " evicted from cache: " + removal.cause) }
             return CacheBuilder.from(spec).recordStats().removalListener(removalListener).build(
-                    object : CacheLoader<ZoneKey, Zone>() {
-                        val writeZone = if (cacheType == ZoneCacheType.STATIC) true else false
+                    object : CacheLoader<ZoneKey?, Zone?>() {
+                        val writeZone = cacheType == ZoneCacheType.STATIC
                         @Throws(IOException::class, GeneralSecurityException::class)
-                        override fun load(zoneKey: ZoneKey): Zone {
+                        override fun load(zoneKey: ZoneKey?): Zone? {
+                            if (zoneKey == null) {
+                                return null
+                            }
                             LOGGER.debug("loading " + cacheType + " " + zoneKey.javaClass.simpleName + " " + zoneKey.name)
                             return loadZone(zoneKey, writeZone)
                         }
 
                         @Throws(IOException::class, GeneralSecurityException::class)
-                        override fun reload(zoneKey: ZoneKey, prevZone: Zone): ListenableFuture<Zone> {
+                        override fun reload(zoneKey: ZoneKey?, prevZone: Zone?): ListenableFuture<Zone?>? {
+                            if (zoneKey == null) {
+                                return null
+                            }
                             val zoneTask = ListenableFutureTask.create { loadZone(zoneKey, writeZone) }
                             zoneExecutor!!.execute(zoneTask)
                             return zoneTask
@@ -596,7 +583,7 @@ class ZoneManager(tr: TrafficRouter, statTracker: StatTracker, trafficOpsUtils: 
         private fun primeZoneCache(domain: String, name: Name, list: List<Record>, tr: TrafficRouter,
                                    zc: LoadingCache<ZoneKey?, Zone?>, dzc: LoadingCache<ZoneKey?, Zone?>, generationTasks: MutableList<Runnable>,
                                    primingTasks: BlockingQueue<Runnable>, ds: DeliveryService?, newDomainsToZoneKeys: ConcurrentMap<String, ZoneKey?>) {
-            generationTasks.add(Runnable {
+            generationTasks.add(Runnable add@{
                 try {
                     val newZoneKey = signatureManager!!.generateZoneKey(name, list)
                     if (tr.isDnssecZoneDiffingEnabled && domainsToZoneKeys.containsKey(domain)) {
@@ -694,7 +681,7 @@ class ZoneManager(tr: TrafficRouter, statTracker: StatTracker, trafficOpsUtils: 
                 }
                 val pset: MutableSet<List<InetRecord>> = HashSet()
                 for (i in 0 until primerLimit) {
-                    val records = tr.inetRecordsFromCaches(ds, caches, request)
+                    val records = tr.inetRecordsFromCaches(ds, caches as MutableList<Cache?>, request)
                     val result = DNSRouteResult()
                     result.addresses = records
                     if (!pset.contains(records)) {
@@ -703,7 +690,7 @@ class ZoneManager(tr: TrafficRouter, statTracker: StatTracker, trafficOpsUtils: 
                         } else {
                             try {
                                 val hitResult = DNSRouteResult()
-                                val hitRecords = tr.selectTrafficRoutersLocalized(cacheLocation.geolocation, request.zoneName, ds)
+                                val hitRecords = tr.selectTrafficRoutersLocalized(cacheLocation.geolocation, request.zoneName, ds).toMutableList()
                                 hitRecords.addAll(records)
                                 hitResult.addresses = hitRecords
                                 fillDynamicZone(dzc, zone, request, hitResult)
@@ -722,18 +709,18 @@ class ZoneManager(tr: TrafficRouter, statTracker: StatTracker, trafficOpsUtils: 
         }
 
         // Check if the zones are equal except for the SOA record serial number, NSEC, or RRSIG records
-        protected fun zonesAreEqual(newRecords: List<Record?>, oldRecords: List<Record?>): Boolean {
-            val oldRecordsCopy: List<Record> = oldRecords.stream()
-                    .filter { r: Record? -> r !is NSECRecord && r !is RRSIGRecord }
-                    .collect(Collectors.toList())
-            val newRecordsCopy: List<Record> = newRecords.stream()
-                    .filter { r: Record? -> r !is NSECRecord && r !is RRSIGRecord }
-                    .collect(Collectors.toList())
+        fun zonesAreEqual(newRecords: List<Record>, oldRecords: List<Record>): Boolean {
+            val oldRecordsCopy: MutableList<Record> = oldRecords
+                    .filter { it !is NSECRecord && it !is RRSIGRecord }
+                    .toMutableList()
+            val newRecordsCopy: MutableList<Record> = newRecords
+                    .filter { it !is NSECRecord && it !is RRSIGRecord }
+                    .toMutableList()
             if (oldRecordsCopy.size != newRecordsCopy.size) {
                 return false
             }
-            Collections.sort(oldRecordsCopy)
-            Collections.sort(newRecordsCopy)
+            oldRecordsCopy.sort()
+            newRecordsCopy.sort()
             for (i in newRecordsCopy.indices) {
                 val newRec = newRecordsCopy[i]
                 val oldRec = oldRecordsCopy[i]
@@ -775,7 +762,7 @@ class ZoneManager(tr: TrafficRouter, statTracker: StatTracker, trafficOpsUtils: 
                             "A" -> list.add(ARecord(name, DClass.IN, ttl, InetAddress.getByName(value)))
                             "AAAA" -> list.add(AAAARecord(name, DClass.IN, ttl, InetAddress.getByName(value)))
                             "CNAME" -> list.add(CNAMERecord(name, DClass.IN, ttl, Name(value)))
-                            "TXT" -> list.add(TXTRecord(name, DClass.IN, ttl, String(value)))
+                            "TXT" -> list.add(TXTRecord(name, DClass.IN, ttl, value))
                         }
                     } catch (ex: JsonUtilsException) {
                         LOGGER.error(ex)
@@ -874,12 +861,12 @@ class ZoneManager(tr: TrafficRouter, statTracker: StatTracker, trafficOpsUtils: 
                         continue
                     }
                     val fqdn = dsr.fqdn
-                    val parts = fqdn.split("\\.", 2.toBoolean()).toTypedArray()
+                    val parts = fqdn.split(Regex("\\."), 2).toTypedArray()
                     val host = parts[0]
                     val domain = parts[1]
                     dsMap[domain] = ds
                     val zholder = zoneMap.computeIfAbsent(domain) { k: String? -> ArrayList() }
-                    val superdomain = domain.split("\\.", 2.toBoolean()).toTypedArray()[1]
+                    val superdomain = domain.split(Regex("\\."), 2).toTypedArray()[1]
                     if (!superDomains.containsKey(superdomain)) {
                         superDomains[superdomain] = ArrayList()
                     }
@@ -939,10 +926,10 @@ class ZoneManager(tr: TrafficRouter, statTracker: StatTracker, trafficOpsUtils: 
                 }
 
                 // populate the dynamic zone with any static entries that aren't NS records or routing names
-                val it: Iterator<RRset?> = staticZone!!.iterator()
+                val it: Iterator<RRset?> = staticZone!!.iterator() as Iterator<RRset?>
                 while (it.hasNext()) {
                     val rrset = it.next()
-                    val rit: Iterator<Record?> = rrset!!.rrs()
+                    val rit: Iterator<Record?> = rrset!!.rrs() as Iterator<Record?>
                     while (rit.hasNext()) {
                         val r = rit.next()
                         if (r is NSRecord) { // NSRecords are handled below
@@ -980,7 +967,7 @@ class ZoneManager(tr: TrafficRouter, statTracker: StatTracker, trafficOpsUtils: 
 
                 // fix up target to be TR host name plus top level domain
                 if (name.subdomain(tld) && name != tld) {
-                    target = String.format("%s.%s", target.split("\\.", 2.toBoolean()).toTypedArray()[0], tld.toString())
+                    target = String.format("%s.%s", target.split(Regex("\\."), 2).toTypedArray()[0], tld.toString())
                 }
                 record = NSRecord(name, DClass.IN, address.ttl, newName(target))
             } else if (address.isInet4) { // address instanceof Inet4Address
@@ -994,16 +981,13 @@ class ZoneManager(tr: TrafficRouter, statTracker: StatTracker, trafficOpsUtils: 
         @Throws(IOException::class)
         private fun createZoneNSRecords(staticZone: Zone?): List<Record?> {
             val records: MutableList<Record?> = ArrayList()
-            val ns: Iterator<Record?> = staticZone!!.ns.rrs()
+            val ns: Iterator<Record?> = staticZone!!.ns.rrs() as Iterator<Record?>
             while (ns.hasNext()) {
                 records.add(ns.next())
             }
             return records
         }
 
-        private fun setTopLevelDomain(topLevelDomain: Name) {
-            Companion.topLevelDomain = topLevelDomain
-        }
     }
 
     init {

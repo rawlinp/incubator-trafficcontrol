@@ -20,6 +20,7 @@ package config
  */
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -33,19 +34,19 @@ import (
 )
 
 type Config struct {
-	Username           string `json:"username"`
-	Password           string `json:"password"`
-	TrafficOpsURL      string `json:"traffic_ops_url"`
-	Insecure           bool   `json:"insecure"`
-	CDNName            string `json:"cdn_name"`
-	TargetTRHost       string `json:"target_tr_host"`
-	HTTPListener       string `json:"http_listener"`
-	HTTPSListener      string `json:"https_listener"`
-	LogLocationError   string `json:"log_location_error"`
-	LogLocationWarning string `json:"log_location_warning"`
-	LogLocationInfo    string `json:"log_location_info"`
-	LogLocationDebug   string `json:"log_location_debug"`
-	LogLocationEvent   string `json:"log_location_event"`
+	Username           string      `json:"username"`
+	Password           string      `json:"password"`
+	TrafficOpsURL      string      `json:"traffic_ops_url"`
+	TLSConfig          *tls.Config `json:"tls_config"`
+	CDNName            string      `json:"cdn_name"`
+	TargetTRHost       string      `json:"target_tr_host"`
+	HTTPListener       string      `json:"http_listener"`
+	HTTPSListener      string      `json:"https_listener"`
+	LogLocationError   string      `json:"log_location_error"`
+	LogLocationWarning string      `json:"log_location_warning"`
+	LogLocationInfo    string      `json:"log_location_info"`
+	LogLocationDebug   string      `json:"log_location_debug"`
+	LogLocationEvent   string      `json:"log_location_event"`
 }
 
 // ErrorLog - critical messages

@@ -1,0 +1,17 @@
+{
+  "username": "",
+  "password": "",
+  "traffic_ops_url": "",
+  "cdn_name": "",
+  "target_tr_host": "",
+  "http_listener": ":80",
+  "https_listener": ":443",
+  "tls_config": {
+    "InsecureSkipVerify": false
+  },
+  "log_location_error": "stderr",
+  "log_location_warning": "stdout",
+  "log_location_info": "stdout",
+  "log_location_debug": "stdout",
+  "log_location_event": "stdout"
+}

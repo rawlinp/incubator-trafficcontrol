@@ -113,10 +113,10 @@ func GetTrafficOpsSession(cfg *config.Config) *toclient.Session {
 	clientOpts.UserAgent = "traffic_diverter/0.1"
 	remoteAddr := "unknown"
 	session, reqInf, err := toclient.Login(cfg.TrafficOpsURL, cfg.Username, cfg.Password, clientOpts)
+	if reqInf.RemoteAddr != nil {
+		remoteAddr = reqInf.RemoteAddr.String()
+	}
 	if err != nil {
-		if reqInf.RemoteAddr != nil {
-			remoteAddr = reqInf.RemoteAddr.String()
-		}
 		log.Errorf("error logging into Traffic Ops (addr = %s): %v", remoteAddr, err)
 		return nil
 	}
@@ -127,13 +127,14 @@ func GetTrafficOpsSession(cfg *config.Config) *toclient.Session {
 func GetCDNCerts(trafficOps *toclient.Session, cfg *config.Config) []tls.Certificate {
 	remoteAddr := "unknown"
 	sslkeys, reqInf, err := trafficOps.GetCDNSSLKeysWithHdr(cfg.CDNName, nil)
+	if reqInf.RemoteAddr != nil {
+		remoteAddr = reqInf.RemoteAddr.String()
+	}
 	if err != nil {
-		if reqInf.RemoteAddr != nil {
-			remoteAddr = reqInf.RemoteAddr.String()
-		}
 		log.Errorf("error getting SSL keys for CDN %s from Traffic Ops (addr = %s): %v", cfg.CDNName, remoteAddr, err)
 		return nil
 	}
+	log.Infof("successfully retrieved SSL keys for CDN %s from Traffic Ops (addr = %s)", cfg.CDNName, remoteAddr)
 	certs := make([]tls.Certificate, 0, len(sslkeys))
 	for _, sslkey := range sslkeys {
 		decodedCert, err := base64.StdEncoding.DecodeString(sslkey.Certificate.Crt)
